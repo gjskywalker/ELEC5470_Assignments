@@ -25,7 +25,7 @@ class MM4LASSO:
         
     def soft_array(self, vn: np.ndarray, c: float) -> np.ndarray:
         for i in range(0, self.p):
-            vn[i] = BCD4LASSO.soft(self, vn[i], self.lm/(2*c))
+            vn[i] = BCD4LASSO.soft(self, vn[i], self.lm/c)
         return vn
      
     def update_variable(self, vn: np.ndarray) -> np.ndarray:
@@ -37,14 +37,10 @@ class MM4LASSO:
         vn = self.v 
         old_value = BCD4LASSO.object_function(self, vn)
         optimal_value = 0
-        cnt = 0
-        print("Initial point: {0}, Initial value: {1}".format(vn, old_value))
-        while cnt < 10:
+        while old_value != optimal_value:
             old_value = optimal_value
             vn = self.update_variable(vn)
             optimal_value = BCD4LASSO.object_function(self, vn)
-            cnt += 1
-            print("Iteration: {0}, vn: {1}, optimal_value: {2}".format(cnt, vn, optimal_value))
         return vn, BCD4LASSO.object_function(self, vn)
     
 
