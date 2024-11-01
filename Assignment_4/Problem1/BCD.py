@@ -32,14 +32,14 @@ class BCD4LASSO:
         results = np.zeros([self.n, 1])
         for i in range(0, n):
             results += (self.X[:,i]*vn[i]).reshape(100, 1)
-        print("sum font result: {0}".format(results))
+        # print("sum font result: {0}".format(results))
         return results
     
     def sum_back(self, vn: np.ndarray, n: int) -> np.ndarray:
         results = np.zeros([self.n, 1])
         for i in range(n+1, self.p):
             results += (self.X[:,i]*vn[i]).reshape(100, 1)
-        print("sum back result: {0}".format(results))
+        # print("sum back result: {0}".format(results))
         return results
         
     def update_variable(self, vn: np.ndarray) -> np.ndarray:
