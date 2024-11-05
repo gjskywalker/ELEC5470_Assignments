@@ -1,5 +1,6 @@
 # Solutions for Convex Optimization Course Coding Assignments
 
+<span class="red">Red list item</span>
 ## Assignment_2
 Assignment 2 is about how to directly use solvers like cvxpy in python. Two implements are provided within this folder, the first one is comparison between linear regression with and without outliers, the second one is about filter design optimization.
 
