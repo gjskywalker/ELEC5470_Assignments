@@ -4,13 +4,22 @@ import numpy as np
 
 sp500_data = pd.read_csv('sp500_data.csv')
 market_data = pd.read_csv('12_Industry_Portfolios_Daily.csv')
-
+k = 3
 labels = dict()
 for i, index in enumerate(sp500_data['Open']):
     labels[i] = index
+
+for i in range(len(labels)-k):
+    flag = 1
+    for j in range(1, k+1):
+        if labels[i] >= labels[i+j]:
+            flag = 0
+            break
+    labels[i] = flag
+print(labels)
+# valid label length is 2512
 with open("labels.pkl", "wb") as f:
     pickle.dump(labels, f)
-print(len(labels))
 
 indicators = dict()
 count = 0
