@@ -9,19 +9,22 @@ class LSTMModel(nn.Module):
         super(LSTMModel, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
         self.fc = nn.Linear(hidden_size, output_size)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         h_0 = torch.zeros(1, x.size(0), 50).to(x.device)
         c_0 = torch.zeros(1, x.size(0), 50).to(x.device)
         out, _ = self.lstm(x, (h_0, c_0))
         out = self.fc(out[:, -1, :])
+        out = self.sigmoid(out)
+        # out = (out > 0.5).float()  # Ensure output is 0 or 1
         return out
 
 # Function to apply the LSTM model
-def apply_lstm_model(data, labels, epochs=400, batch_size=32):
+def apply_lstm_model(data, labels, epochs=5000, batch_size=32):
     input_size = data.shape[2]
     model = LSTMModel(input_size, 50, 1)
-    criterion = nn.MSELoss()
+    criterion = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     data = torch.tensor(data, dtype=torch.float32)
@@ -40,10 +43,13 @@ def apply_lstm_model(data, labels, epochs=400, batch_size=32):
 
 # Example usage
 if __name__ == "__main__":
-    # Generate dummy data
-    data = np.random.rand(50, 300, 4)  # 100 samples, 10 time steps, 1 feature
-    labels = np.random.rand(50, 1)    # 100 labels
-    print("Labels: ", labels)
+    import os
+    import pickle
+    current_folder = os.path.dirname(os.getcwd())
+    data_path = os.path.join(current_folder, "Prepare_Datasets/indicator_array.pkl")
+    labels_path = os.path.join(current_folder, "Prepare_Datasets/labels.pkl")
+    data = pickle.load(open(data_path, "rb"))
+    labels = pickle.load(open(labels_path, "rb"))
     # Apply the LSTM model
     model = apply_lstm_model(data, labels)
     model.eval()
