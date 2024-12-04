@@ -1,6 +1,6 @@
-
 import yfinance as yf
 import pandas as pd
+import argparse 
 
 def download_sp500_data(start_date, end_date, output_file):
     # Download historical data for the S&P 500 (ticker symbol: ^GSPC)
@@ -12,7 +12,10 @@ def download_sp500_data(start_date, end_date, output_file):
     print(f"Data successfully downloaded and saved to {output_file}")
 
 if __name__ == '__main__':
-    start_date = '2014-01-01'
-    end_date = '2024-01-01'
-    output_file = 'sp500_data.csv'
-    download_sp500_data(start_date, end_date, output_file)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--start_date', type=str, required=True, help='Start date in YYYY-MM-DD format')
+    parser.add_argument('--end_date', type=str, required=True, help='End date in YYYY-MM-DD format')
+    parser.add_argument('--output_file', type=str, default='sp500_data.csv', help='Output CSV file name')
+    args = parser.parse_args()
+    
+    download_sp500_data(args.start_date, args.end_date, args.output_file)
