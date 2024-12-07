@@ -36,7 +36,7 @@ class GenerateDataSet:
         The label is 1 if the current index is greater than all previous k indexes, otherwise 0.
         The labels are saved to a pickle file named "labels.pkl".
         '''
-        for i, index in enumerate(self.sp500_data['Open']):
+        for i, index in enumerate(self.sp500_data['Close']):
             self.indexes[i] = index
 
         for i in range(self.k, len(self.indexes)):
@@ -78,6 +78,52 @@ class GenerateDataSet:
                 self.indicator_array[i - self.k, j, :] = self.indicators[i + j - self.k]
         with open("indicator_array.pkl", "wb") as f:
             pickle.dump(self.indicator_array, f)
+            
+    def generate_out_of_sample_dataset(self):
+        '''
+        Generates out-of-sample datasets by separating the indicator array and labels into 6 groups.
+        Each group contains 400 training data and 5 testing data.
+
+        Args:
+            indicator_array (np.ndarray): The array of indicators.
+            labels (np.ndarray): The array of labels.
+
+        Returns:
+            dict: A dictionary containing the indicator arrays for each group.
+            dict: A dictionary containing the labels for each group.
+        '''
+        indicator_dict = dict()
+        indicator_array_dict = dict()
+        labels_dict = dict()
+        num_groups = 6
+        train_size = 400
+        test_size = 5
+
+        for i in range(num_groups):
+            start_idx = i * (train_size + test_size)
+            end_idx = start_idx + train_size
+            test_start_idx = end_idx
+            test_end_idx = test_start_idx + test_size
+
+            indicator_dict[i] = {
+                'train': {key: self.indicators[key] for key in range(start_idx, end_idx)},
+                'test': {key: self.indicators[key] for key in range(test_start_idx, test_end_idx)}
+            }
+            indicator_array_dict[i] = {
+                'train': self.indicator_array[start_idx:end_idx],
+                'test': self.indicator_array[test_start_idx:test_end_idx]
+            }
+            labels_dict[i] = {
+                'train': self.labels[start_idx:end_idx],
+                'test': self.labels[test_start_idx:test_end_idx]
+            }
+        with open("out_of_sample_indicators.pkl", "wb") as f:
+            pickle.dump(indicator_dict, f)
+        with open("out_of_sample_indicator_array.pkl", "wb") as f:
+            pickle.dump(indicator_array_dict, f)
+        with open("out_of_sample_labels.pkl", "wb") as f:  
+            pickle.dump(labels_dict, f)
+
 
 if __name__ == "__main__":
     '''
@@ -88,3 +134,4 @@ if __name__ == "__main__":
     dataset.generate_labels()
     dataset.generate_indicators()
     dataset.generate_indicator_array()
+    dataset.generate_out_of_sample_dataset()

@@ -51,9 +51,14 @@ class LSTMModel(nn.Module):
         return out
 
 # Function to apply the LSTM model
-def apply_lstm_model(data, labels, epochs=2000, batch_size=32):
+def apply_lstm_model(data, labels, group, epochs=1500, batch_size=32):
     input_size = data.shape[2]
     model = LSTMModel(input_size, 50, 1)
+    total_params = 0
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            total_params += param.numel()
+    print(f'Total number of parameters: {total_params}')
     criterion = nn.BCELoss()  # Use BCEWithLogitsLoss instead of BCELoss
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -70,7 +75,7 @@ def apply_lstm_model(data, labels, epochs=2000, batch_size=32):
         loss.backward()
         optimizer.step()
         losses.append(loss.item())
-        print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
+        # print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
 
     # Plot the training losses
     plt.figure()
@@ -79,23 +84,45 @@ def apply_lstm_model(data, labels, epochs=2000, batch_size=32):
     plt.ylabel('Loss')
     plt.title('Training Loss over Epochs')
     plt.legend()
-    plt.savefig('training_loss_lstm.pdf', dpi=800)
+    plt.savefig('training_loss_lstm'+str(group)+'.pdf', dpi=800)
 
     return model
 
 # Example usage
 if __name__ == "__main__":
+    '''
+    In-sample Mean of predictions: 0.33297
+    
+    Total number of parameters: 12851
+    Mean of predictions 0.3745983123779297 in 0
+    Total number of parameters: 12851
+    Mean of predictions 0.43026037216186525 in 1
+    Total number of parameters: 12851
+    Mean of predictions 0.36968929767608644 in 2
+    Total number of parameters: 12851
+    Mean of predictions 1.0852177365450188e-05 in 3
+    Total number of parameters: 12851
+    Mean of predictions 0.18390424251556398 in 4
+    Total number of parameters: 12851
+    Mean of predictions 1.775256387190893e-05 in 5
+    '''
     import os
     import pickle
     current_folder = os.path.dirname(os.getcwd())
-    data_path = os.path.join(current_folder, "Prepare_Datasets/indicator_array.pkl")
-    labels_path = os.path.join(current_folder, "Prepare_Datasets/labels.pkl")
+    data_path = os.path.join(current_folder, "Prepare_Datasets/out_of_sample_indicator_array.pkl")
+    labels_path = os.path.join(current_folder, "Prepare_Datasets/out_of_sample_labels.pkl")
     data = pickle.load(open(data_path, "rb"))
     # print(data)
     labels = pickle.load(open(labels_path, "rb"))
     # Apply the LSTM model
-    model = apply_lstm_model(data, labels)
-    model.eval()
-    with torch.no_grad():
-        predictions = model(torch.tensor(data, dtype=torch.float32))
-    print(predictions)
+    for i in range(6):
+        model = apply_lstm_model(data[i]['train'], np.asarray(labels[i]['train']).reshape(400,1), group=i)
+        model.eval()
+        with torch.no_grad():
+            predictions = model(torch.tensor(data[i]['test'], dtype=torch.float32))
+        with open("lstm_predictions"+str(i)+".pkl", "wb") as f:
+            pickle.dump(predictions, f)
+        # Calculate the mean of predictions
+        mean_prediction = predictions.sum().item() / predictions.shape[0]
+        print(f'Mean of predictions {mean_prediction} in {i}') 
+        print(f'Ground Truth: {np.mean(labels[i]["test"])}')

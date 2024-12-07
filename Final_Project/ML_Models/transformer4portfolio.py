@@ -17,8 +17,14 @@ class TransformerModel(nn.Module):
         output_size (int): The number of output features.
         num_layers (int, optional): The number of encoder layers in the transformer. Default is 1.
         nhead (int, optional): The number of heads in the multiheadattention models. Default is 2.
+    
+    Note:
+        This model does not include decoder layers because it is designed for tasks where the output is a prediction
+        based on the input sequence (e.g., time series forecasting, classification). Decoder layers are typically used
+        in sequence-to-sequence tasks (e.g., language translation) where the model generates an output sequence from an
+        input sequence.
     '''
-    def __init__(self, input_size, hidden_size, output_size, num_layers=1, nhead=2):
+    def __init__(self, input_size, hidden_size, output_size, num_layers=6, nhead=4):
         super(TransformerModel, self).__init__()
         self.encoder_layer = nn.TransformerEncoderLayer(d_model=input_size, nhead=nhead, dim_feedforward=hidden_size, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_layers)
@@ -41,7 +47,7 @@ class TransformerModel(nn.Module):
         return out[:, -1, :]
 
 # Function to apply the Transformer model
-def apply_transformer_model(data, labels, epochs=10000, batch_size=32):
+def apply_transformer_model(data, labels, group, epochs=1500, batch_size=32):
     '''
     Trains the Transformer model on the provided data and labels.
     
@@ -56,6 +62,11 @@ def apply_transformer_model(data, labels, epochs=10000, batch_size=32):
     '''
     input_size = data.shape[2]
     model = TransformerModel(input_size, 50, 1)
+    total_params = 0
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            total_params += param.numel()
+    print(f'Total number of parameters: {total_params}')
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -72,7 +83,7 @@ def apply_transformer_model(data, labels, epochs=10000, batch_size=32):
         loss.backward()
         optimizer.step()
         losses.append(loss.item())
-        print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
+        # print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
     
     # Plot the training losses
     plt.figure()
@@ -81,27 +92,45 @@ def apply_transformer_model(data, labels, epochs=10000, batch_size=32):
     plt.ylabel('Loss')
     plt.title('Training Loss over Epochs')
     plt.legend()
-    plt.savefig('training_loss_transformer.pdf', dpi=800)
+    plt.savefig('training_loss_'+str(group)+'transformer.pdf', dpi=800)
 
     return model
 
 # Example usage
 if __name__ == "__main__":
     '''
-    Loads the data and labels from pickle files, trains the Transformer model, and prints the predictions.
+    In-sample Mean of predictions: 0.33125
+    
+    Total number of parameters: 13551
+    Mean of predictions 0.40242786407470704 in 0
+    Total number of parameters: 13551
+    Mean of predictions 0.20558631420135498 in 1
+    Total number of parameters: 13551
+    Mean of predictions 0.0067454040050506595 in 2
+    Total number of parameters: 13551
+    Mean of predictions 0.006575499475002289 in 3
+    Total number of parameters: 13551
+    Mean of predictions 0.024905355274677278 in 4
+    Total number of parameters: 13551
+    Mean of predictions 0.4013665199279785 in 5
     '''
     import os
     import pickle
     current_folder = os.path.dirname(os.getcwd())
-    data_path = os.path.join(current_folder, "Prepare_Datasets/indicator_array.pkl")
-    labels_path = os.path.join(current_folder, "Prepare_Datasets/labels.pkl")
+    data_path = os.path.join(current_folder, "Prepare_Datasets/out_of_sample_indicator_array.pkl")
+    labels_path = os.path.join(current_folder, "Prepare_Datasets/out_of_sample_labels.pkl")
     data = pickle.load(open(data_path, "rb"))
     # print(data)
     labels = pickle.load(open(labels_path, "rb"))
-    # Apply the LSTM model
     # Apply the Transformer model
-    model = apply_transformer_model(data, labels)
-    model.eval()
-    with torch.no_grad():
-        predictions = model(torch.tensor(data, dtype=torch.float32))
-    print(predictions)
+    for i in range(6):
+        model = apply_transformer_model(data[i]['train'], np.asarray(labels[i]['train']).reshape(400,1), group=i)
+        model.eval()
+        with torch.no_grad():
+            predictions = model(torch.tensor(data[i]['test'], dtype=torch.float32))
+        with open("transformer_predictions"+str(i)+".pkl", "wb") as f:
+            pickle.dump(predictions, f)
+        # Calculate the mean of predictions
+        mean_prediction = predictions.sum().item() / predictions.shape[0]
+        print(f'Mean of predictions {mean_prediction} in {i}') 
+        print(f'Ground Truth: {np.mean(labels[i]["test"])}')
