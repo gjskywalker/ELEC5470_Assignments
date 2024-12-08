@@ -77,6 +77,8 @@ def apply_lstm_model(data, labels, group, epochs=1500, batch_size=32):
         losses.append(loss.item())
         # print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
 
+    with open("lstm_losses"+str(group)+".pkl", "wb") as f:
+        pickle.dump(losses, f)
     # Plot the training losses
     plt.figure()
     plt.plot(range(epochs), losses, label='Training Loss')
@@ -92,7 +94,23 @@ def apply_lstm_model(data, labels, group, epochs=1500, batch_size=32):
 if __name__ == "__main__":
     '''
     In-sample Mean of predictions: 0.33297
-    
+    '''
+    import os
+    import pickle
+    # Out-of-sample
+    current_folder = os.path.dirname(os.getcwd())
+    data_path = os.path.join(current_folder, "Prepare_Datasets/indicator_array.pkl")
+    labels_path = os.path.join(current_folder, "Prepare_Datasets/labels.pkl")
+    data = pickle.load(open(data_path, "rb"))
+    # print(data)
+    labels = pickle.load(open(labels_path, "rb"))
+    # Apply the LSTM model
+    model = apply_lstm_model(data, np.asarray(labels).reshape(2511,1), group=0)
+    model.eval()
+    with torch.no_grad():
+        predictions = model(torch.tensor(data, dtype=torch.float32))
+    '''
+    Out-of-sample
     Total number of parameters: 12851
     Mean of predictions 0.3745983123779297 in 0
     Total number of parameters: 12851
@@ -105,9 +123,10 @@ if __name__ == "__main__":
     Mean of predictions 0.18390424251556398 in 4
     Total number of parameters: 12851
     Mean of predictions 1.775256387190893e-05 in 5
-    '''
+    
     import os
     import pickle
+    # Out-of-sample
     current_folder = os.path.dirname(os.getcwd())
     data_path = os.path.join(current_folder, "Prepare_Datasets/out_of_sample_indicator_array.pkl")
     labels_path = os.path.join(current_folder, "Prepare_Datasets/out_of_sample_labels.pkl")
@@ -126,3 +145,5 @@ if __name__ == "__main__":
         mean_prediction = predictions.sum().item() / predictions.shape[0]
         print(f'Mean of predictions {mean_prediction} in {i}') 
         print(f'Ground Truth: {np.mean(labels[i]["test"])}')
+    '''
+    

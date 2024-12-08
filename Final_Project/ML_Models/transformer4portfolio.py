@@ -85,6 +85,8 @@ def apply_transformer_model(data, labels, group, epochs=1500, batch_size=32):
         losses.append(loss.item())
         # print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
     
+    with open("transformer_losses"+str(group)+".pkl", "wb") as f:
+        pickle.dump(losses, f)
     # Plot the training losses
     plt.figure()
     plt.plot(range(epochs), losses, label='Training Loss')
@@ -100,7 +102,21 @@ def apply_transformer_model(data, labels, group, epochs=1500, batch_size=32):
 if __name__ == "__main__":
     '''
     In-sample Mean of predictions: 0.33125
-    
+    '''
+    import os
+    import pickle
+    current_folder = os.path.dirname(os.getcwd())
+    data_path = os.path.join(current_folder, "Prepare_Datasets/indicator_array.pkl")
+    labels_path = os.path.join(current_folder, "Prepare_Datasets/labels.pkl")
+    data = pickle.load(open(data_path, "rb"))
+    # print(data)
+    labels = pickle.load(open(labels_path, "rb"))
+    # Apply the Transformer model
+    model = apply_transformer_model(data, np.asarray(labels).reshape(2511,1), group=0)
+    model.eval()
+    with torch.no_grad():
+        predictions = model(torch.tensor(data, dtype=torch.float32))
+    '''
     Total number of parameters: 13551
     Mean of predictions 0.40242786407470704 in 0
     Total number of parameters: 13551
@@ -113,7 +129,7 @@ if __name__ == "__main__":
     Mean of predictions 0.024905355274677278 in 4
     Total number of parameters: 13551
     Mean of predictions 0.4013665199279785 in 5
-    '''
+    
     import os
     import pickle
     current_folder = os.path.dirname(os.getcwd())
@@ -134,3 +150,5 @@ if __name__ == "__main__":
         mean_prediction = predictions.sum().item() / predictions.shape[0]
         print(f'Mean of predictions {mean_prediction} in {i}') 
         print(f'Ground Truth: {np.mean(labels[i]["test"])}')
+    '''
+    
